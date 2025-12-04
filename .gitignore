@@ -1,0 +1,24 @@
+# --- 1. ส่วนของ React / Node.js ---
+**/node_modules/
+**/build/
+**/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- 2. ส่วนของ Environment Variables ---
+.env
+.env.local
+.env.*.local
+
+# --- 3. ส่วนของ ELK Stack (กันไฟล์ข้อมูล Log) ---
+# ถ้าในอนาคตคุณ map volume ออกมาที่เครื่อง host จะได้ไม่หลุดขึ้นไป
+es_data/
+logstash_data/
+*.log
+
+# --- 4. ส่วนของ System & Editor (ไฟล์ขยะ) ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
