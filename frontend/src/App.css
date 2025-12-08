@@ -24,6 +24,30 @@
   color: white;
 }
 
+body {
+  background-color: #ffffff; 
+  color: #000000;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.button-group {
+  margin-top: 20px;
+}
+
+.button-group button {
+  margin: 0 10px;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  border: none;
+}
+
 .App-link {
   color: #61dafb;
 }

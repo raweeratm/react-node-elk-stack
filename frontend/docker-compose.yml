@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  react-app:
+    # 🟢 สั่งให้ Docker ใช้ Dockerfile ที่อยู่ในโฟลเดอร์เดียวกัน
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    
+    # Map Port 3000 (เครื่องเรา) ไป 3000 (ใน Container)
+    ports:
+      - "8080:8080"
+      
+    # 🟢 Volumes: สำคัญสำหรับ Hot Reloading
+    volumes:
+      # 1. Sync โค้ด src/ และ public/ ของเรา เข้ากับ Container
+      - ./src:/app/src
+      - ./public:/app/public
+      
+      # 2. ป้องกัน node_modules ใน Container ไม่ให้ถูกทับด้วยของเครื่อง Host
+      - /app/node_modules
+      
+    # 🟢 Environment Variables: ช่วยแก้ปัญหา File Sync บน Docker (โดยเฉพาะบน Windows/Mac)
+    environment:
+      - PORT=8080
+      - CHOKIDAR_USEPOLLING=true 
+    
+    # 🟢 ทำให้ Container ไม่ปิดตัวเองเมื่อรัน npm start
+    stdin_open: true 
+    tty: true
