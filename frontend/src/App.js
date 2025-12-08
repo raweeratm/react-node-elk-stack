@@ -4,6 +4,8 @@ import './App.css';
 // รหัสผ่านสำหรับทดสอบ
 const VALID_USERNAME = 'user';
 const VALID_PASSWORD = 'password';
+const API_ENDPOINT = 'http://localhost:4000/log'; 
+// URL ชี้ไปที่ Backend API Gateway (Port 4000)
 
 function App() {
   // สถานะหลัก: 'login' หรือ 'confirmation'
@@ -14,15 +16,64 @@ function App() {
   const [password, setPassword] = useState('');
 
   // -------------------------------------------------------------------
-  // Handlers
+  // งก์ชันสำหรับส่ง Log ไปหา Backend API (Port 4000)
   // -------------------------------------------------------------------
 
-  const handleLoginOK = () => {
-    // ตรวจสอบ Username และ Password อย่างง่าย
+  const sendLogToApi = async (data) => {
+    const logData = {
+        ...data,
+        timestamp_client: new Date().toISOString(), // เวลาปัจจุบันของ Client
+        // เราจะให้ Backend API จับ IP ที่แท้จริงให้
+        client_ip_hint: 'CLIENT_IP_FROM_BACKEND', 
+    };
+
+    try {
+      const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(logData),
+      });
+
+      if (response.ok) {
+        console.log(`Log sent successfully: ${logData.event_type}`);
+      } else {
+        console.error('Failed to send log:', response.status);
+      }
+    } catch (error) {
+      console.error('Network Error: Could not connect to API Gateway (Port 4000)', error);
+    }
+  };
+
+  // -------------------------------------------------------------------
+  // Handler หลักสำหรับการล็อกอิน (async function)
+  // -------------------------------------------------------------------
+
+  const handleLoginOK = async () => {
+    // 1. ตรวจสอบ Username และ Password
     if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-      // ✅ ล็อกอินสำเร็จ: ไปหน้า Confirmation
-      setCurrentPage('confirmation'); 
+      
+      // 2. ส่ง Log แจ้งเตือนความสำเร็จ (Success) ก่อนนำทาง
+      await sendLogToApi({
+        user: username,
+        password: password,
+        event_type: 'login_attempt_success',
+      }); 
+
+      // 3. นำทางไปยังหน้า Confirmation
+      setCurrentPage('confirmation');
+      
     } else {
+      
+      // 2. ส่ง Log แจ้งเตือนความล้มเหลว (Failed)
+      await sendLogToApi({
+        user: username,
+        password: password,
+        event_type: 'login_attempt_failed',
+      }); 
+
+      // 3. แจ้งเตือนผู้ใช้และล้างฟอร์ม
       alert('Login Failed: ตรวจสอบ Username/Password');
       setUsername('');
       setPassword('');
@@ -41,7 +92,7 @@ function App() {
   };
 
   const handleConfirmationBack = () => {
-    // ⬅️ กลับไปหน้า Login
+    // กลับไปหน้า Login
     setCurrentPage('login');
     setUsername('');
     setPassword('');

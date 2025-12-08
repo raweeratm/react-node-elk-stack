@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    restart: always
+    
+    # Map Port 4000 ออกมาภายนอก
+    ports:
+      - "4000:4000"
+      
+    # เชื่อมต่อกับ Network กลาง (เพื่อให้มองเห็น Logstash ได้)
+    networks:
+      - elk-net
+    
+    # Volumes สำหรับการพัฒนา: sync โค้ด server.js
+    volumes:
+      - ./server.js:/usr/src/app/server.js
+      - /usr/src/app/node_modules
+
+networks:
+  elk-net:
+    external: true
