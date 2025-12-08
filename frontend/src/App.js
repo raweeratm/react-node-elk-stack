@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import './App.css'; 
 
 // รหัสผ่านสำหรับทดสอบ
-const VALID_USERNAME = 'user';
-const VALID_PASSWORD = 'password';
+const VALID_USERS = [
+  { user: 'user', pass: 'password'},
+  { user: 'user1', pass: 'password1'},
+];
+
 const API_ENDPOINT = 'http://localhost:4000/log'; 
 // URL ชี้ไปที่ Backend API Gateway (Port 4000)
 
@@ -51,10 +54,15 @@ function App() {
   // -------------------------------------------------------------------
 
   const handleLoginOK = async () => {
-    // 1. ตรวจสอบ Username และ Password
-    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
+    
+    // 1. ตรวจสอบว่า Username/Password ตรงกับบัญชีใดใน VALID_USERS หรือไม่
+    const userFound = VALID_USERS.find(
+      u => u.user === username && u.pass === password
+    );
+
+    if (userFound) {
       
-      // 2. ส่ง Log แจ้งเตือนความสำเร็จ (Success) ก่อนนำทาง
+      // 2. 🟢 ส่ง Log แจ้งเตือนความสำเร็จ
       await sendLogToApi({
         user: username,
         password: password,
@@ -66,7 +74,7 @@ function App() {
       
     } else {
       
-      // 2. ส่ง Log แจ้งเตือนความล้มเหลว (Failed)
+      // 2. 🟢 ส่ง Log แจ้งเตือนความล้มเหลว
       await sendLogToApi({
         user: username,
         password: password,
@@ -80,6 +88,7 @@ function App() {
     }
   };
 
+  
   const handleLoginCancel = () => {
     // เมื่อกด Cancel
     setUsername('');
@@ -88,11 +97,11 @@ function App() {
   };
 
   const handleConfirmationOK = () => {
-    alert('Action Confirmed! (ไปต่อหน้าที่ 3)');
+    alert('Action Confirmed! ');
   };
 
   const handleConfirmationBack = () => {
-    // กลับไปหน้า Login
+    // ⬅️ กลับไปหน้า Login
     setCurrentPage('login');
     setUsername('');
     setPassword('');
