@@ -1,5 +1,4 @@
 const express = require('express');
-const net = require('net'); // Library สำหรับ TCP Socket
 const cors = require('cors'); // Library สำหรับ CORS
 
 const app = express();
@@ -11,30 +10,38 @@ const LOGSTASH_PORT = 5000; // 🟢 Port ที่ Logstash กำลังฟ�
 app.use(cors()); // อนุญาตให้ React (จาก Port 8080) ส่ง Request มาได้
 app.use(express.json()); // รับค่า JSON ที่ React ส่งมา
 
+// เปลี่ยนปลายทางเป็น Logstash HTTP API (ใช้ชื่อ Service ใน Docker: 'logstash')
+const LOGSTASH_API_ENDPOINT = 'http://logstash:8080';
+
 // ----------------------------------------------------
-// API Endpoint: /log (รับ Log จาก React)
+/// Endpoint สำหรับรับ Log จาก React
 // ----------------------------------------------------
-app.post('/log', (req, res) => {
+app.post('/log', async (req, res) => { // ต้องเป็น async function
     const logData = req.body;
-    
-    // 1. จับ IP Address ที่แท้จริงของผู้ใช้
     logData.client_ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    
-    // 2. แปลงข้อมูล JSON เป็น String และเพิ่ม \n (Line Break) ให้ Logstash รู้ว่าจบหนึ่งบรรทัด
-    const logMessage = JSON.stringify(logData) + '\n'; 
-    
-    // 3. ส่งข้อมูลผ่าน TCP Socket ไปหา Logstash
-    const client = net.connect(LOGSTASH_PORT, LOGSTASH_HOST, () => {
-        console.log(`[API] Sending log to Logstash: ${logData.event_type}`);
-        client.write(logMessage);
-        client.end(); // ปิดการเชื่อมต่อ Socket
-    });
 
-    client.on('error', (err) => {
-        console.error(`[API ERROR] Could not connect to Logstash: ${err.message}`);
-    });
+    try {
+      // ใช้ fetch เพื่อยิง HTTP POST ไปที่ Logstash
+      const logstashResponse = await fetch(LOGSTASH_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(logData) // ส่ง JSON Body
+      });
 
-    res.status(200).send({ status: 'Log received and forwarded' });
+      if (logstashResponse.ok || logstashResponse.status === 200) {
+        console.log(`[API] Log sent successfully to Logstash via HTTP: ${logData.event_type}`);
+        res.status(200).send({ status: 'Log received and forwarded via HTTP' });
+      } else {
+         console.error(`[API ERROR] Logstash returned status: ${logstashResponse.status}`);
+         res.status(500).send({ status: 'Failed to forward log to Logstash' });
+      }
+
+    } catch (err) {
+      console.error(`[API ERROR] Failed to connect to Logstash HTTP API: ${err.message}`);
+      res.status(500).send({ status: 'Logstash connection failed' });
+    }
 });
 
 // Start Server
