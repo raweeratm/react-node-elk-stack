@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: react-frontend
     
-    # Map Port 3000 (เครื่องเรา) ไป 3000 (ใน Container)
+    # Map Port 8080 (เครื่องเรา) ไป 8080 (ใน Container)
     ports:
       - "8080:8080"
       
@@ -21,7 +21,7 @@ services:
       # 2. ป้องกัน node_modules ใน Container ไม่ให้ถูกทับด้วยของเครื่อง Host
       - /app/node_modules
       
-    # 🟢 Environment Variables: ช่วยแก้ปัญหา File Sync บน Docker (โดยเฉพาะบน Windows/Mac)
+    # 🟢 Environment Variables: ช่วยแก้ปัญหา File Sync บน Docker 
     environment:
       - PORT=8080
       - CHOKIDAR_USEPOLLING=true 
