@@ -5,6 +5,7 @@ import './App.css';
 const VALID_USERS = [
   { user: 'user', pass: 'password'},
   { user: 'user1', pass: 'password1'},
+  { user: 'lcb1', pass: '56789'},
 ];
 
 const API_ENDPOINT = 'http://localhost:4000/log'; 
