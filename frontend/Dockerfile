@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # กำหนด Port
-EXPOSE 3000
+EXPOSE 8080
 
 # คำสั่งรัน (จะรัน npm start ที่อยู่ใน package.json)
 CMD ["npm", "start"]

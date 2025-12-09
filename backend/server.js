@@ -3,11 +3,9 @@ const cors = require('cors'); // Library สำหรับ CORS
 
 const app = express();
 const API_PORT = 4000;
-const LOGSTASH_HOST = 'logstash'; // 🟢 ชื่อ Service ใน Docker Compose
-const LOGSTASH_PORT = 5000; // 🟢 Port ที่ Logstash กำลังฟังอยู่
 
 // Middleware Setup
-app.use(cors()); // อนุญาตให้ React (จาก Port 8080) ส่ง Request มาได้
+app.use(cors()); // อนุญาตให้ React (จาก Port 3000 หรือ 8080) ส่ง Request มาได้
 app.use(express.json()); // รับค่า JSON ที่ React ส่งมา
 
 // เปลี่ยนปลายทางเป็น Logstash HTTP API (ใช้ชื่อ Service ใน Docker: 'logstash')
@@ -18,6 +16,7 @@ const LOGSTASH_API_ENDPOINT = 'http://logstash:8080';
 // ----------------------------------------------------
 app.post('/log', async (req, res) => { // ต้องเป็น async function
     const logData = req.body;
+    // เพิ่ม Client IP จาก Request Header หรือ Socket
     logData.client_ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     try {
@@ -31,7 +30,7 @@ app.post('/log', async (req, res) => { // ต้องเป็น async functio
       });
 
       if (logstashResponse.ok || logstashResponse.status === 200) {
-        console.log(`[API] Log sent successfully to Logstash via HTTP: ${logData.event_type}`);
+        console.log(`[API] Log sent successfully to Logstash via HTTP: ${logData.eventType}`);
         res.status(200).send({ status: 'Log received and forwarded via HTTP' });
       } else {
          console.error(`[API ERROR] Logstash returned status: ${logstashResponse.status}`);
