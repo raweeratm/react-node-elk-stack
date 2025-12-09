@@ -29,3 +29,13 @@ services:
     # 🟢 ทำให้ Container ไม่ปิดตัวเองเมื่อรัน npm start
     stdin_open: true 
     tty: true
+
+  jest-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jest-runner
+    command: ["npm", "test", "--", "--watchAll=false"]
+    volumes:
+      - .:/app
+      - /app/node_modules

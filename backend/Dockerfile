@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 # ติดตั้ง Dependencies
 COPY package.json package-lock.json ./
 RUN npm install
+RUN apk update && apk add --no-cache curl
 
 # ก๊อปปี้โค้ดทั้งหมด
 COPY . .

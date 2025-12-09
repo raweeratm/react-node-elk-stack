@@ -1,15 +1,58 @@
 import React, { useState } from 'react';
 import './App.css'; 
 
-// รหัสผ่านสำหรับทดสอบ
-const VALID_USERS = [
-  { user: 'user', pass: 'password'},
-  { user: 'user1', pass: 'password1'},
-  { user: 'lcb1', pass: '56789'},
-];
+// -------------------------------------------------------------------
+// นำเข้าข้อมูลจาก Environment Variable 
+// -------------------------------------------------------------------
+const validUsersJsonString = process.env.REACT_APP_VALID_USERS_JSON || '[]'; 
 
-const API_ENDPOINT = 'http://localhost:4000/log'; 
-// URL ชี้ไปที่ Backend API Gateway (Port 4000)
+let validUsers = [];
+try {
+  validUsers = JSON.parse(validUsersJsonString);
+  console.log('Loaded validUsers from .env successfully.');
+} catch (e) {
+  console.error('Failed to parse VALID_USERS_JSON from .env:', e);
+  validUsers = []; 
+}
+
+// DEBUG validUsers
+console.log('*** DEBUG: Final Valid Users Array:', validUsers); 
+console.log('*** DEBUG: Array Length:', validUsers.length);
+
+// -------------------------------------------------------------------
+// ฟังก์ชันส่ง Log ไปยัง API Gateway 
+// -------------------------------------------------------------------
+// 🟢 เพิ่มฟังก์ชันนี้เพื่อส่ง HTTP POST Request ไปยัง API Gateway
+const sendLogToApi = async (data) => {
+    const logData = {
+        user: data.user,
+        password: data.pass,
+        eventType: data.eventType,
+        timestampClient: new Date().toISOString(), // เพิ่ม timestamp ฝั่ง client
+    };
+
+    try {
+        // ใช้ fetch เพื่อยิง HTTP POST ไปที่ API Gateway (สมมติว่ารันบน localhost:4000)
+        // ถ้าใช้ Docker ต้องใช้ชื่อโฮสต์/พอร์ตที่ถูกต้องในการเชื่อมต่อ
+        const response = await fetch('http://localhost:4000/log', { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(logData) 
+        });
+
+        if (response.ok) {
+            console.log(`[API Log] Event: ${data.eventType} | User: ${data.user} - Sent successfully.`);
+        } else {
+            console.error(`[API Log] Failed to send log: ${response.status}`);
+        }
+    } catch (error) {
+        // อาจจะเกิดเมื่อ API Gateway ไม่ได้รันอยู่
+        console.error(`[API Log] Connection error: API Gateway unreachable.`, error);
+    }
+};
+
 
 function App() {
   // สถานะหลัก: 'login' หรือ 'confirmation'
@@ -18,86 +61,73 @@ function App() {
   // สถานะสำหรับฟอร์มล็อกอิน
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  
+  // สถานะสำหรับข้อความแจ้งเตือน (แทน alert)
+  const [loginMessage, setLoginMessage] = useState('');
 
   // -------------------------------------------------------------------
-  // งก์ชันสำหรับส่ง Log ไปหา Backend API (Port 4000)
+  // Logic: Check Login
   // -------------------------------------------------------------------
-
-  const sendLogToApi = async (data) => {
-    const logData = {
-        ...data,
-        timestamp_client: new Date().toISOString(), // เวลาปัจจุบันของ Client
-        // เราจะให้ Backend API จับ IP ที่แท้จริงให้
-        client_ip_hint: 'CLIENT_IP_FROM_BACKEND', 
-    };
-
-    try {
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(logData),
-      });
-
-      if (response.ok) {
-        console.log(`Log sent successfully: ${logData.event_type}`);
-      } else {
-        console.error('Failed to send log:', response.status);
-      }
-    } catch (error) {
-      console.error('Network Error: Could not connect to API Gateway (Port 4000)', error);
-    }
-  };
-
-  // -------------------------------------------------------------------
-  // Handler หลักสำหรับการล็อกอิน (async function)
-  // -------------------------------------------------------------------
-
-  const handleLoginOK = async () => {
+  // ฟังก์ชัน Check Login (ถูกเรียกจาก eventClickLogin)
+  const checkLogin = async (user, pass) => {
+    setLoginMessage(''); // ล้างข้อความเก่า
     
-    // 1. ตรวจสอบว่า Username/Password ตรงกับบัญชีใดใน VALID_USERS หรือไม่
-    const userFound = VALID_USERS.find(
-      u => u.user === username && u.pass === password
+    const userFound = validUsers.find(
+      u => u.user === user && u.pass === pass
     );
 
     if (userFound) {
       
-      // 2. 🟢 ส่ง Log แจ้งเตือนความสำเร็จ
+      // 🟢 ส่ง Log แจ้งเตือนความสำเร็จ (ใช้ฟังก์ชันจริง)
       await sendLogToApi({
-        user: username,
-        password: password,
-        event_type: 'login_attempt_success',
+        user: user,
+        pass: pass,
+        eventType: 'login_attempt_success', 
       }); 
 
-      // 3. นำทางไปยังหน้า Confirmation
+      // นำทางไปยังหน้า Confirmation
       setCurrentPage('confirmation');
       
     } else {
       
-      // 2. 🟢 ส่ง Log แจ้งเตือนความล้มเหลว
+      // 🔴 ส่ง Log แจ้งเตือนความล้มเหลว (ใช้ฟังก์ชันจริง)
       await sendLogToApi({
-        user: username,
-        password: password,
-        event_type: 'login_attempt_failed',
+        user: user,
+        pass: pass,
+        eventType: 'login_attempt_failed', 
       }); 
 
-      // 3. แจ้งเตือนผู้ใช้และล้างฟอร์ม
-      alert('Login Failed: ตรวจสอบ Username/Password');
-      setUsername('');
-      setPassword('');
+      // แสดงข้อความแจ้งเตือน (แทน alert)
+      setLoginMessage('Login Failed: ตรวจสอบ Username/Password');
+      
     }
   };
 
-  
-  const handleLoginCancel = () => {
-    // เมื่อกด Cancel
+  // -------------------------------------------------------------------
+  // Logic: Cancel Login
+  // -------------------------------------------------------------------
+  // ฟังก์ชัน Cancel Login (ถูกเรียกจาก eventClickCancel)
+  const cancelLogin = () => {
     setUsername('');
     setPassword('');
-    alert('Login Cancelled');
+    setLoginMessage('Login Cancelled.');
+  };
+  
+  // -------------------------------------------------------------------
+  // Handlers (เชื่อม Logic กับ Event)
+  // -------------------------------------------------------------------
+  
+  // Handler สำหรับปุ่ม OK
+  const eventClickLogin = () => {
+    checkLogin(username, password);
   };
 
-  const handleConfirmationOK = () => {
+  // Handler สำหรับปุ่ม Cancel
+  const eventClickCancel = () => {
+    cancelLogin();
+  };
+
+  const handleConfirmationOk = () => {
     alert('Action Confirmed! ');
   };
 
@@ -106,6 +136,7 @@ function App() {
     setCurrentPage('login');
     setUsername('');
     setPassword('');
+    setLoginMessage('');
   };
 
   // -------------------------------------------------------------------
@@ -137,16 +168,22 @@ function App() {
       />
 
       <div className="button-group">
-        <button onClick={handleLoginOK} className="btn-ok">
+        {/* เรียกใช้ eventClickLogin */}
+        <button onClick={eventClickLogin} className="btn-ok">
           OK
         </button>
-        <button onClick={handleLoginCancel} className="btn-cancel">
+        {/* เรียกใช้ eventClickCancel */}
+        <button onClick={eventClickCancel} className="btn-cancel">
           Cancel
         </button>
       </div>
-      {/* <small style={{ color: '#f38ba8', marginTop: '10px' }}>
-          * Username: user / Password: password
-      </small> */}
+
+      {/* 🔴 แสดงข้อความแจ้งเตือนแทน alert */}
+      {loginMessage && (
+          <small style={{ color: '#ff6961', marginTop: '10px', display: 'block' }}>
+              {loginMessage}
+          </small>
+      )}
     </div>
   );
 
@@ -156,7 +193,7 @@ function App() {
       <p>คุณล็อกอินสำเร็จแล้ว</p>
       
       <div className="button-group">
-        <button onClick={handleConfirmationOK} className="btn-ok">
+        <button onClick={handleConfirmationOk} className="btn-ok">
           OK
         </button>
         <button onClick={handleConfirmationBack} className="btn-cancel">
