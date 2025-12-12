@@ -15,6 +15,7 @@ services:
     # เชื่อมต่อกับ Network กลาง (เพื่อให้มองเห็น Logstash ได้)
     networks:
       - elk-net
+      - private-elk-net
     
     # Volumes สำหรับการพัฒนา: sync โค้ด server.js
     volumes:
@@ -23,4 +24,6 @@ services:
 
 networks:
   elk-net:
+    external: true
+  private-elk-net:
     external: true

@@ -1,4 +1,3 @@
-// checkLogin.test.js
 import { checkLogin } from './checkLogin.js';
 import dotenv from 'dotenv';
 dotenv.config();

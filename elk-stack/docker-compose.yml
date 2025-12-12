@@ -13,7 +13,7 @@ services:
     ports:
       - "9200:9200"
     networks:
-      - elk-net
+      - private-elk-net
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.14.0
@@ -27,6 +27,7 @@ services:
       - elasticsearch
     networks:
       - elk-net
+      - private-elk-net
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.14.0
@@ -39,8 +40,11 @@ services:
       - elasticsearch
     networks:
       - elk-net
+      - private-elk-net
 
 # ประกาศชื่อ Network กลางเอาไว้ (สร้างด้วยคำสั่ง docker network create)
 networks:
   elk-net:
+    external: true
+  private-elk-net:
     external: true

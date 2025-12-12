@@ -7,6 +7,8 @@ WORKDIR /app
 # ก๊อปไฟล์ package.json เพื่อติดตั้ง Dependencies (ใช้ Layer Caching)
 COPY package.json package-lock.json ./
 
+RUN npm install axios@1.6.8 --save
+
 # ติดตั้ง Dependencies ทั้งหมด
 RUN npm install
 
