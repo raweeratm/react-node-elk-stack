@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import './App.css'; 
 
 // -------------------------------------------------------------------
@@ -24,83 +25,29 @@ console.log('*** DEBUG: Array Length:', validUsers.length);
 // -------------------------------------------------------------------
 
 
- // ฟังก์ชันจำลอง Response (Mock)
- // @param {string} scenario - สถานะที่ต้องการทดสอบ ('OK', 'FAILED', 'EXCEPTION')
-const mockResponseCallApi = (scenario) => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            switch (scenario) {
-                // 1. กรณีสำเร็จ (OK) -> Return 200
-                case 'OK':
-                    resolve({
-                        ok: true,
-                        status: 200,
-                        json: async () => ({ status: 'Log received and forwarded via HTTP' })
-                    });
-                    break;
+// เพิ่มฟังก์ชันนี้เพื่อส่ง HTTP POST Request ไปยัง API Gateway
+export const sendLogToApi = async (data) => {
+  const logData = {
+    user: data.user,
+    password: data.pass,
+    eventType: data.eventType,
+    timestampClient: new Date().toISOString(),
+  };
 
-                // 2. กรณีส่งค่าผิด (Failed) -> Return 400
-                case 'FAILED':
-                    resolve({
-                        ok: false,
-                        status: 400,
-                        json: async () => ({ status: 'Bad Request / Invalid Data' })
-                    });
-                    break;
+  try {
+    const response = await axios.post('http://localhost:4000/log', logData);
 
-                // 3. กรณีเซิร์ฟเวอร์มีปัญหา (Exception/Error) -> Return 500
-                case 'EXCEPTION':
-                    resolve({
-                        ok: false, // fetch ถือว่า 500 ไม่ใช่ network error แต่ ok จะเป็น false
-                        status: 500,
-                        json: async () => ({ status: 'Failed to forward log to Logstash' })
-                    });
-                    break;
-                
-                default:
-                    // กรณีลืมใส่ case
-                    resolve({ ok: true, status: 200 });
-            }
-        }, 500); // หน่วงเวลา 0.5 วินาที เพื่อให้เหมือนยิง API จริง
-    });
-};
-
-// 🟢 เพิ่มฟังก์ชันนี้เพื่อส่ง HTTP POST Request ไปยัง API Gateway
-const sendLogToApi = async (data) => {
-    const logData = {
-        user: data.user,
-        password: data.pass,
-        eventType: data.eventType,
-        timestampClient: new Date().toISOString(), // เพิ่ม timestamp ฝั่ง client
-    };
-
-    try {
-        // ใช้ fetch เพื่อยิง HTTP POST ไปที่ API Gateway (สมมติว่ารันบน localhost:4000)
-        // ถ้าใช้ Docker ต้องใช้ชื่อโฮสต์/พอร์ตที่ถูกต้องในการเชื่อมต่อ
-        // const response = await fetch('http://localhost:4000/log', { 
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json'
-        //     },
-        //     body: JSON.stringify(logData) 
-        // });
-
-        // สำหรับการทดสอบ เราจะใช้ mockResponseCallApi แทนการเรียก fetch จริง
-        const response = await mockResponseCallApi('OK');       // ทดสอบเคสผ่านฉลุย
-        // const response = await mockResponseCallApi('FAILED');   // ทดสอบเคสส่งข้อมูลผิด (400)
-        // const response = await mockResponseCallApi('EXCEPTION'); // ทดสอบเคส Server พัง (500)
-
-        if (response.ok) {
-            console.log(`[API Log] Event: ${data.eventType} | User: ${data.user} - Sent successfully.`);
-        } else {
-            console.error(`[API Log] Failed to send log: ${response.status}`);
-        }
-    } catch (error) {
-        // อาจจะเกิดเมื่อ API Gateway ไม่ได้รันอยู่
-        console.error(`[API Log] Connection error: API Gateway unreachable.`, error);
+    if (response.status === 200) {
+      return { status: 200, message: 'Log sent successfully' };
+    } else if (response.status === 400) {
+      return { status: 400, message: 'Bad Request / Invalid Data' };
+    } else {
+      return { status: 500, message: 'Server Error' };
     }
+  } catch (error) {
+    return { status: 500, message: 'Network Error' };
+  }
 };
-
 
 function App() {
   // สถานะหลัก: 'login' หรือ 'confirmation'
